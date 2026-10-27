@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chirp | Social Microblog</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#fff;color:#17202a}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+:root{--blue:#1d9bf0;--muted:#687783;--border:#e5eaf0;--soft:#f5f8fa}
+
+button:focus-visible,input:focus-visible,textarea:focus-visible{
+ outline:2px solid var(--blue);outline-offset:2px
+}
+
+/* LOGIN AND SIGNUP */
+
+.auth-screen{
+ min-height:100vh;display:flex;justify-content:center;align-items:center;
+ padding:20px;background:linear-gradient(135deg,#e7f5ff,#fff 55%,#e5fff2)
+}
+.auth-card{
+ width:100%;max-width:420px;background:white;padding:32px;
+ border:1px solid var(--border);border-radius:20px;
+ box-shadow:0 15px 50px #1d355710
+}
+.auth-logo{font-size:38px;font-weight:bold;color:var(--blue);margin-bottom:8px}
+.auth-card h1{font-size:27px;margin-bottom:8px}
+.auth-card .subtitle{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:22px}
+.auth-card label{display:block;font-size:13px;font-weight:bold;margin:14px 0 7px}
+.auth-card input{
+ width:100%;padding:12px;border:1px solid #cbd5df;border-radius:8px;outline:none
+}
+.auth-card input:focus{border-color:var(--blue)}
+.primary{
+ background:var(--blue);color:white;border:0;border-radius:25px;
+ padding:12px 18px;font-weight:bold
+}
+.auth-submit{width:100%;margin-top:20px}
+.switch-text{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
+.text-button{background:none;border:0;color:var(--blue);font-weight:bold}
+.auth-error{color:#c62828;font-size:12px;margin-top:12px;line-height:1.5}
+.demo-box{margin-top:20px;padding:12px;background:var(--soft);border-radius:10px;font-size:12px;line-height:1.8;color:var(--muted)}
+.demo-box strong{color:#17202a}
+
+/* MAIN APPLICATION */
+
+.layout{
+ width:100%;max-width:1250px;margin:auto;display:grid;
+ grid-template-columns:220px minmax(340px,620px) 300px;min-height:100vh
+}
+.sidebar{padding:20px 15px;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.logo{font-size:32px;font-weight:900;color:var(--blue);margin:0 10px 25px}
+.nav-button{
+ width:100%;padding:13px;border:0;background:white;border-radius:25px;
+ text-align:left;font-size:15px;margin-bottom:6px
+}
+.nav-button:hover,.nav-button.active{background:#eaf6ff;color:#087fc4}
+.compose-button{width:100%;margin:16px 0;padding:13px}
+.sidebar-user{
+ display:flex;align-items:center;gap:9px;margin-top:auto;padding-top:30px;
+ overflow:hidden
+}
+.sidebar-user strong,.sidebar-user small{display:block;overflow-wrap:anywhere}
+.sidebar-user strong{font-size:13px}
+.sidebar-user small{color:var(--muted);font-size:12px;margin-top:4px}
+.avatar{
+ width:42px;height:42px;min-width:42px;border-radius:50%;
+ display:flex;align-items:center;justify-content:center;
+ background:#d6f5e5;color:#17754c;font-weight:bold
+}
+.main{border-right:1px solid var(--border);min-width:0}
+.topbar{
+ position:sticky;top:0;background:#ffffffee;backdrop-filter:blur(10px);
+ padding:18px 20px;border-bottom:1px solid var(--border);z-index:2
+}
+.topbar h2{font-size:20px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)}
+.tab{padding:14px;border:0;background:white;color:var(--muted);font-size:13px}
+.tab.active{color:var(--blue);font-weight:bold;border-bottom:3px solid var(--blue)}
+.composer{display:flex;gap:12px;padding:20px;border-bottom:8px solid var(--soft)}
+.composer-body{flex:1;min-width:0}
+.composer textarea{
+ width:100%;min-height:80px;border:0;resize:vertical;outline:none;
+ font-size:17px;padding:7px 0
+}
+.composer textarea::placeholder{color:#8796a2}
+.composer-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.muted{color:var(--muted);font-size:11px}
+.post-button{padding:9px 19px}
+.post-button:disabled{opacity:.5;cursor:not-allowed}
+
+/* FEED */
+
+.post{display:flex;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border)}
+.post-body{flex:1;min-width:0}
+.post-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 9px}
+.post-head strong{font-size:13px}
+.handle,.timestamp{font-size:12px;color:var(--muted)}
+.post-text{font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:13px}
+.post-actions{display:flex;justify-content:space-between;gap:4px;max-width:430px}
+.action{
+ border:0;background:none;color:var(--muted);padding:5px;
+ border-radius:15px;font-size:12px
+}
+.action:hover{background:#edf7ff;color:var(--blue)}
+.action.liked{color:#e0245e}
+.action.reposted{color:#00a36c}
+.delete-btn{margin-left:auto;color:#c44;border:0;background:none;font-size:18px}
+.empty{text-align:center;padding:38px 20px;color:var(--muted);font-size:13px;line-height:1.7}
+.empty strong{display:block;font-size:18px;color:#17202a;margin-bottom:7px}
+
+/* PROFILE */
+
+.profile-cover{height:100px;background:linear-gradient(120deg,#b7e4ff,#c7f5db)}
+.profile-info{padding:0 20px 20px;border-bottom:8px solid var(--soft)}
+.profile-top{display:flex;align-items:flex-end;justify-content:space-between;margin-top:-35px}
+.big-avatar{
+ width:82px;height:82px;border:4px solid white;border-radius:50%;
+ display:grid;place-items:center;background:#d6f5e5;color:#17754c;
+ font-size:27px;font-weight:bold
+}
+.profile-info h3{font-size:18px;margin-top:10px}
+.profile-info .handle{display:block;margin-top:5px}
+.profile-bio{font-size:13px;margin-top:12px;line-height:1.5}
+.stats{display:flex;gap:22px;margin-top:17px;flex-wrap:wrap}
+.stat{border:0;background:none;font-size:13px}
+.stat strong{font-size:15px}
+.stat span{color:var(--muted)}
+.stat:hover span{color:var(--blue)}
+.logout-btn{background:white;border:1px solid #aab8c2;padding:8px 12px;border-radius:20px;font-size:11px;font-weight:bold}
+
+/* RIGHT SIDE */
+
+.rightbar{padding:15px}
+.search{width:100%;border:0;border-radius:25px;padding:13px;background:var(--soft);outline:none;margin-bottom:18px}
+.widget{background:#f7f9fa;border-radius:15px;padding:16px;margin-bottom:18px}
+.widget h3{font-size:17px;margin-bottom:14px}
+.suggestion{display:flex;align-items:center;gap:8px;margin:15px 0}
+.suggestion .avatar{width:37px;height:37px;min-width:37px}
+.suggestion-info{flex:1;min-width:0}
+.suggestion-info strong,.suggestion-info small{display:block;overflow-wrap:anywhere}
+.suggestion-info strong{font-size:12px}
+.suggestion-info small{font-size:11px;color:var(--muted);margin-top:4px}
+.follow-btn{background:#17202a;border:0;color:white;padding:8px 11px;border-radius:20px;font-size:10px;font-weight:bold}
+.follow-btn.following{background:white;color:#17202a;border:1px solid #aab8c2}
+.trend{padding:10px 0;border-bottom:1px solid var(--border)}
+.trend:last-child{border:0}
+.trend small{font-size:11px;color:var(--muted)}
+.trend strong{display:block;font-size:13px;margin:5px 0}
+.footer-note{font-size:11px;color:var(--muted);line-height:1.8}
+
+/* FOLLOWERS MODAL */
+
+.modal-backdrop{
+ position:fixed;inset:0;background:#0007;display:flex;align-items:center;
+ justify-content:center;padding:18px;z-index:10
+}
+.modal{width:100%;max-width:400px;max-height:80vh;overflow:auto;background:white;border-radius:16px;padding:20px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.modal-header button{background:none;border:0;font-size:24px}
+.modal-person{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.modal-person strong{font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#17202a;color:white;padding:12px 18px;border-radius:10px;font-size:13px;z-index:20}
+@media(max-width:950px){
+ .layout{grid-template-columns:75px minmax(0,620px);justify-content:center}
+ .sidebar{padding:15px 8px}
+ .logo{text-align:center;font-size:0;margin:8px 0 25px}
+ .logo:after{content:"✳";font-size:29px}
+ .nav-button{font-size:0;text-align:center}
+ .nav-button .nav-icon{font-size:22px}
+ .sidebar .compose-button{font-size:0;padding:12px 2px}
+ .sidebar .compose-button:after{content:"＋";font-size:20px}
+ .sidebar-user{justify-content:center}
+ .sidebar-user div:last-child{display:none}
+ .rightbar{display:none}
+}
+@media(max-width:550px){
+ .layout{display:block;padding-bottom:60px}
+ .sidebar{
+  position:fixed;top:auto;bottom:0;left:0;right:0;height:58px;z-index:5;
+  padding:4px 9px;background:white;border-right:0;border-top:1px solid var(--border)
+ }
+ .sidebar .logo,.sidebar .compose-button,.sidebar-user{display:none}
+ .sidebar nav{display:flex;justify-content:space-around;gap:4px}
+ .nav-button{flex:1;padding:10px 2px;margin:0;border-radius:12px}
+ .main{border:0}
+ .post,.composer{padding:14px}
+ .topbar{position:static}
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIGN IN / SIGN UP -->
+
+<section id="authScreen" class="auth-screen">
+ <div class="auth-card">
+  <div class="auth-logo">✳ chirp</div>
+
+  <form id="signinForm">
+   <h1>Welcome back!</h1>
+   <p class="subtitle">Sign in to see what your community is sharing.</p>
+
+   <label for="loginIdentity">Username or email</label>
+   <input id="loginIdentity" autocomplete="username" required placeholder="Enter username or email">
+
+   <label for="loginPassword">Password</label>
+   <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Enter password">
+
+   <button class="primary auth-submit" type="submit">Sign In</button>
+   <p id="signinError" class="auth-error"></p>
+
+   <p class="switch-text">Don't have an account?
+    <button type="button" class="text-button" onclick="showSignup()">Sign Up</button>
+   </p>
+  </form>
+
+  <form id="signupForm" class="hidden">
+   <h1>Create an account</h1>
+   <p class="subtitle">Join Chirp and share your thoughts.</p>
+
+   <label for="signupName">Full name</label>
+   <input id="signupName" required maxlength="40" autocomplete="name" placeholder="Your name">
+
+   <label for="signupUsername">Username</label>
+   <input id="signupUsername" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" autocomplete="username" placeholder="e.g. akshaya_01">
+
+   <label for="signupEmail">Email</label>
+   <input id="signupEmail" type="email" required autocomplete="email" placeholder="you@example.com">
+
+   <label for="signupPassword">Password (at least 6 characters)</label>
+   <input id="signupPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Create a password">
+
+   <button class="primary auth-submit" type="submit">Create Account</button>
+   <p id="signupError" class="auth-error"></p>
+
+   <p class="switch-text">Already have an account?
+    <button type="button" class="text-button" onclick="showSignin()">Sign In</button>
+   </p>
+  </form>
+
+  <div class="demo-box">
+   <strong>Try a demo account</strong><br>
+   Username: <strong>maya</strong> · Password: <strong>maya123</strong><br>
+   Username: <strong>rahul</strong> · Password: <strong>rahul123</strong>
+  </div>
+ </div>
+</section>
+
+<!-- SOCIAL APP -->
+
+<div id="app" class="layout hidden">
+
+ <aside class="sidebar">
+  <div class="logo">✳ chirp</div>
+
+  <nav>
+   <button class="nav-button active" data-view="home"><span class="nav-icon">⌂</span> Home</button>
+   <button class="nav-button" data-view="explore"><span class="nav-icon">⌕</span> Explore</button>
+   <button class="nav-button" data-view="profile"><span class="nav-icon">♙</span> Profile</button>
+  </nav>
+
+  <button class="primary compose-button" onclick="focusComposer()">Post ＋</button>
+
+  <div class="sidebar-user">
+   <div class="avatar" id="sidebarAvatar">A</div>
+   <div><strong id="sidebarName">User</strong><small id="sidebarHandle">@user</small></div>
+  </div>
+ </aside>
+
+ <main class="main">
+  <header class="topbar"><h2 id="pageTitle">Home</h2></header>
+
+  <div id="feedTabs" class="tabs">
+   <button class="tab" data-feed="following">Following</button>
+   <button class="tab active" data-feed="foryou">For You</button>
+  </div>
+
+  <section id="profilePanel" class="hidden">
+   <div class="profile-cover"></div>
+   <div class="profile-info">
+    <div class="profile-top">
+     <div id="profileAvatar" class="big-avatar">A</div>
+     <button class="logout-btn" onclick="logout()">Log out ↗</button>
+    </div>
+    <h3 id="profileName">User</h3>
+    <span id="profileHandle" class="handle">@user</span>
+    <p class="profile-bio">Sharing ideas, learning, and connecting with people.</p>
+    <div class="stats">
+     <button class="stat" onclick="openPeople('following')"><strong id="followingCount">0</strong> <span>Following</span></button>
+     <button class="stat" onclick="openPeople('followers')"><strong id="followerCount">0</strong> <span>Followers</span></button>
+     <div class="stat"><strong id="postCount">0</strong> <span>Posts</span></div>
+    </div>
+   </div>
+  </section>
+
+  <section id="composer" class="composer">
+   <div id="composerAvatar" class="avatar">A</div>
+   <div class="composer-body">
+    <textarea id="postText" maxlength="280" placeholder="What's happening?"></textarea>
+    <div class="composer-bottom">
+     <span id="charCount" class="muted">0/280</span>
+     <button id="publishButton" class="primary post-button" disabled>Post</button>
+    </div>
+   </div>
+  </section>
+
+  <section id="posts"></section>
+ </main>
+
+ <aside class="rightbar">
+  <input id="searchInput" class="search" type="search" placeholder="Search posts or people...">
+
+  <section class="widget">
+   <h3>Who to follow</h3>
+   <div id="suggestions"></div>
+  </section>
+
+  <section class="widget">
+   <h3>What's happening</h3>
+   <div class="trend"><small>Technology · Trending</small><strong>#WebDevelopment</strong><small>Discover new projects</small></div>
+   <div class="trend"><small>Learning · Trending</small><strong>#CodingLife</strong><small>Share what you learn</small></div>
+   <div class="trend"><small>Technology · Trending</small><strong>#ArtificialIntelligence</strong><small>Ideas for tomorrow</small></div>
+  </section>
+
+  <p class="footer-note">About · Privacy · Terms<br>© 2026 Chirp</p>
+ </aside>
+</div>
+
+<div id="peopleModal" class="modal-backdrop hidden">
+ <div class="modal">
+  <div class="modal-header"><h3 id="modalTitle">Followers</h3><button onclick="closePeople()" aria-label="Close">×</button></div>
+  <div id="modalPeople"></div>
+ </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const DB_KEY = "chirp_social_database_v1";
+const SESSION_KEY = "chirp_social_session_v1";
+
+function initialDatabase() {
+ return {
+  users: [
+   {id:"demo_maya",name:"Maya Krish",username:"maya",email:"maya@example.com",password:"maya123",following:[]},
+   {id:"demo_rahul",name:"Rahul Kumar",username:"rahul",email:"rahul@example.com",password:"rahul123",following:[]},
+   {id:"demo_priya",name:"Priya N",username:"priya",email:"priya@example.com",password:"priya123",following:[]}
+  ],
+  posts: [
+   {id:"sample1",userId:"demo_maya",text:"Hello everyone! Welcome to Chirp. Let's share ideas, learn together, and build a great community! 👋",createdAt:Date.now()-3600000,likes:["demo_rahul"]},
+   {id:"sample2",userId:"demo_rahul",text:"My coding reminder: start small, practise every day, and don't be afraid to make mistakes. 💻",createdAt:Date.now()-7200000,likes:[]},
+   {id:"sample3",userId:"demo_priya",text:"What are you learning today? Share your goals and inspire someone else! 🌱",createdAt:Date.now()-10800000,likes:[]}
+  ]
+ };
+}
+
+let db;
+try {
+ db = JSON.parse(localStorage.getItem(DB_KEY)) || initialDatabase();
+ if (!Array.isArray(db.users) || !Array.isArray(db.posts)) db = initialDatabase();
+} catch {
+ db = initialDatabase();
+}
+
+let currentUser = null;
+let currentView = "home";
+let activeFeed = "foryou";
+let searchText = "";
+
+function saveDatabase() {
+ localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function getUser(id) {
+ return db.users.find(user => user.id === id);
+}
+
+function escapeHTML(value) {
+ return String(value).replace(/[&<>"']/g, char => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[char]));
+}
+
+function followersOf(userId) {
+ return db.users.filter(user => user.following.includes(userId));
+}
+
+function avatarHTML(user, extraClass="") {
+ const initial = escapeHTML(user.name.trim().charAt(0).toUpperCase() || "?");
+ return `<div class="avatar ${extraClass}">${initial}</div>`;
+}
+
+function showSignup() {
+ document.getElementById("signinForm").classList.add("hidden");
+ document.getElementById("signupForm").classList.remove("hidden");
+ document.getElementById("signinError").textContent = "";
+}
+
+function showSignin() {
+ document.getElementById("signupForm").classList.add("hidden");
+ document.getElementById("signinForm").classList.remove("hidden");
+ document.getElementById("signupError").textContent = "";
+}
+
+document.getElementById("signupForm").addEventListener("submit", function(event) {
+ event.preventDefault();
+
+ const name = document.getElementById("signupName").value.trim();
+ const username = document.getElementById("signupUsername").value.trim().toLowerCase();
+ const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+ const password = document.getElementById("signupPassword").value;
+ const error = document.getElementById("signupError");
+
+ if (db.users.some(u => u.username.toLowerCase() === username)) {
+  error.textContent = "This username is already taken.";
+  return;
+ }
+
+ if (db.users.some(u => u.email.toLowerCase() === email)) {
+  error.textContent = "An account with this email already exists.";
+  return;
+ }
+
+ const user = {
+  id: "user_" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+  name, username, email, password, following:[]
+ };
+
+ db.users.push(user);
+ saveDatabase();
+ document.getElementById("signupForm").reset();
+ loginUser(user);
+});
+
+document.getElementById("signinForm").addEventListener("submit", function(event) {
+ event.preventDefault();
+
+ const identity = document.getElementById("loginIdentity").value.trim().toLowerCase().replace(/^@/,"");
+ const password = document.getElementById("loginPassword").value;
+
+ const user = db.users.find(u =>
+  (u.username.toLowerCase() === identity || u.email.toLowerCase() === identity) &&
+  u.password === password
+ );
+
+ if (!user) {
+  document.getElementById("signinError").textContent = "Incorrect username/email or password.";
+  return;
+ }
+
+ loginUser(user);
+});
+
+function loginUser(user) {
+ currentUser = user;
+ localStorage.setItem(SESSION_KEY, user.id);
+
+ document.getElementById("authScreen").classList.add("hidden");
+ document.getElementById("app").classList.remove("hidden");
+
+ document.getElementById("sidebarName").textContent = user.name;
+ document.getElementById("sidebarHandle").textContent = "@" + user.username;
+ document.getElementById("sidebarAvatar").textContent = user.name.charAt(0).toUpperCase();
+ document.getElementById("composerAvatar").textContent = user.name.charAt(0).toUpperCase();
+ document.getElementById("signinError").textContent = "";
+
+ currentView = "home";
+ activeFeed = "foryou";
+ updateNavigation();
+ renderApp();
+}
+
+function logout() {
+ currentUser = null;
+ localStorage.removeItem(SESSION_KEY);
+ document.getElementById("app").classList.add("hidden");
+ document.getElementById("authScreen").classList.remove("hidden");
+ document.getElementById("loginPassword").value = "";
+ showSignin();
+}
+
+function updateNavigation() {
+ document.querySelectorAll(".nav-button").forEach(button => {
+  button.classList.toggle("active", button.dataset.view === currentView);
+ });
+ document.querySelectorAll(".tab").forEach(button => {
+  button.classList.toggle("active", button.dataset.feed === activeFeed);
+ });
+
+ document.getElementById("feedTabs").classList.toggle("hidden", currentView !== "home");
+ document.getElementById("composer").classList.toggle("hidden", currentView === "profile");
+ document.getElementById("profilePanel").classList.toggle("hidden", currentView !== "profile");
+
+ document.getElementById("pageTitle").textContent =
+  currentView === "home" ? "Home" :
+  currentView === "explore" ? "Explore" : "Your Profile";
+}
+
+document.querySelectorAll(".nav-button").forEach(button => {
+ button.addEventListener("click", () => {
+  currentView = button.dataset.view;
+  updateNavigation();
+  renderApp();
+ });
+});
+
+document.querySelectorAll(".tab").forEach(button => {
+ button.addEventListener("click", () => {
+  activeFeed = button.dataset.feed;
+  updateNavigation();
+  renderApp();
+ });
+});
+
+function focusComposer() {
+ if (currentView === "profile") {
+  currentView = "home";
+  updateNavigation();
+ }
+ document.getElementById("composer").scrollIntoView({behavior:"smooth",block:"center"});
+ document.getElementById("postText").focus();
+}
+
+document.getElementById("postText").addEventListener("input", function() {
+ const length = this.value.length;
+ document.getElementById("charCount").textContent = length + "/280";
+ document.getElementById("publishButton").disabled = !this.value.trim();
+});
+
+document.getElementById("publishButton").addEventListener("click", function() {
+ const text = document.getElementById("postText").value.trim();
+ if (!text || !currentUser) return;
+
+ db.posts.push({
+  id:"post_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+  userId:currentUser.id,
+  text,
+  createdAt:Date.now(),
+  likes:[]
+ });
+
+ saveDatabase();
+ document.getElementById("postText").value = "";
+ document.getElementById("charCount").textContent = "0/280";
+ this.disabled = true;
+
+ currentView = "home";
+ activeFeed = "foryou";
+ updateNavigation();
+ renderApp();
+ showToast("Your post was published!");
+});
+
+function formatTime(timestamp) {
+ const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+ if (minutes < 1) return "now";
+ if (minutes < 60) return minutes + "m";
+ const hours = Math.floor(minutes / 60);
+ if (hours < 24) return hours + "h";
+ return Math.floor(hours / 24) + "d";
+}
+
+function getVisiblePosts() {
+ let list = [...db.posts];
+
+ if (currentView === "profile") {
+  list = list.filter(post => post.userId === currentUser.id);
+ } else if (currentView === "home" && activeFeed === "following") {
+  list = list.filter(post =>
+   post.userId === currentUser.id ||
+   currentUser.following.includes(post.userId)
+  );
+ }
+
+ if (searchText) {
+  list = list.filter(post => {
+   const author = getUser(post.userId);
+   if (!author) return false;
+   return post.text.toLowerCase().includes(searchText) ||
+    author.name.toLowerCase().includes(searchText) ||
+    author.username.toLowerCase().includes(searchText);
+  });
+ }
+
+ return list.sort((a,b) => b.createdAt - a.createdAt);
+}
+
+function renderPosts() {
+ const container = document.getElementById("posts");
+ const list = getVisiblePosts();
+ container.innerHTML = "";
+
+ if (list.length === 0) {
+  container.innerHTML = `<div class="empty"><strong>No posts yet</strong>Follow people or write your first post to get started.</div>`;
+  return;
+ }
+
+ list.forEach(post => {
+  const author = getUser(post.userId);
+  if (!author) return;
+
+  const liked = post.likes.includes(currentUser.id);
+  const article = document.createElement("article");
+  article.className = "post";
+
+  const avatar = avatarHTML(author);
+  const actions = `
+   <div class="post-actions">
+    <button class="action" data-reply="${escapeHTML(post.id)}">💬 Reply</button>
+    <button class="action ${post.reposts?.includes(currentUser.id) ? "reposted" : ""}" data-repost="${escapeHTML(post.id)}">🔁 ${post.reposts?.length || 0}</button>
+    <button class="action ${liked ? "liked" : ""}" data-like="${escapeHTML(post.id)}">${liked ? "❤️" : "♡"} ${post.likes.length}</button>
+    <button class="action" data-share="${escapeHTML(post.id)}">↗ Share</button>
+   </div>`;
+
+  const deleteButton = post.userId === currentUser.id
+   ? `<button class="delete-btn" data-delete="${escapeHTML(post.id)}" aria-label="Delete post">×</button>`
+   : "";
+
+  article.innerHTML = `
+   ${avatar}
+   <div class="post-body">
+    <div class="post-head">
+     <strong>${escapeHTML(author.name)}</strong>
+     <span class="handle">@${escapeHTML(author.username)}</span>
+     <span class="timestamp">· ${formatTime(post.createdAt)}</span>
+     ${deleteButton}
+    </div>
+    <p class="post-text">${escapeHTML(post.text)}</p>
+    ${actions}
+   </div>`;
+
+  container.appendChild(article);
+ });
+}
+
+function renderSuggestions() {
+ const box = document.getElementById("suggestions");
+ const people = db.users.filter(user => user.id !== currentUser.id);
+
+ if (people.length === 0) {
+  box.innerHTML = `<p class="muted">No users to suggest yet.</p>`;
+  return;
+ }
+
+ box.innerHTML = people.map(user => {
+  const isFollowing = currentUser.following.includes(user.id);
+  const followerCount = followersOf(user.id).length;
+
+  return `<div class="suggestion">
+   ${avatarHTML(user)}
+   <div class="suggestion-info">
+    <strong>${escapeHTML(user.name)}</strong>
+    <small>@${escapeHTML(user.username)} · ${followerCount} followers</small>
+   </div>
+   <button class="follow-btn ${isFollowing ? "following" : ""}" data-follow="${escapeHTML(user.id)}">
+    ${isFollowing ? "Following" : "Follow"}
+   </button>
+  </div>`;
+ }).join("");
+}
+
+function renderProfile() {
+ document.getElementById("profileAvatar").textContent = currentUser.name.charAt(0).toUpperCase();
+ document.getElementById("profileName").textContent = currentUser.name;
+ document.getElementById("profileHandle").textContent = "@" + currentUser.username;
+ document.getElementById("followingCount").textContent = currentUser.following.length;
+ document.getElementById("followerCount").textContent = followersOf(currentUser.id).length;
+ document.getElementById("postCount").textContent = db.posts.filter(post => post.userId === currentUser.id).length;
+}
+
+function renderApp() {
+ renderProfile();
+ renderSuggestions();
+ renderPosts();
+}
+
+document.getElementById("posts").addEventListener("click", function(event) {
+ const button = event.target.closest("button");
+ if (!button) return;
+
+ if (button.dataset.like) {
+  const post = db.posts.find(p => p.id === button.dataset.like);
+  if (!post) return;
+
+  if (post.likes.includes(currentUser.id)) {
+   post.likes = post.likes.filter(id => id !== currentUser.id);
+  } else {
+   post.likes.push(currentUser.id);
+  }
+
+  saveDatabase();
+  renderApp();
+ }
+
+ if (button.dataset.repost) {
+  const post = db.posts.find(p => p.id === button.dataset.repost);
+  if (!post) return;
+
+  if (!Array.isArray(post.reposts)) post.reposts = [];
+  if (post.reposts.includes(currentUser.id)) {
+   post.reposts = post.reposts.filter(id => id !== currentUser.id);
+  } else {
+   post.reposts.push(currentUser.id);
+  }
+
+  saveDatabase();
+  renderApp();
+  showToast("Repost updated!");
+ }
+
+ if (button.dataset.reply) {
+  const reply = prompt("Write your reply:");
+  if (reply && reply.trim()) showToast("Reply noted in this demo.");
+ }
+
+ if (button.dataset.share) {
+  const post = db.posts.find(p => p.id === button.dataset.share);
+  if (post) {
+   const text = post.text;
+   if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(
+     () => showToast("Post copied!"),
+     () => prompt("Copy this post:",text)
+    );
+   } else {
+    prompt("Copy this post:",text);
+   }
+  }
+ }
+
+ if (button.dataset.delete) {
+  if (confirm("Delete your post?")) {
+   db.posts = db.posts.filter(p => p.id !== button.dataset.delete);
+   saveDatabase();
+   renderApp();
+   showToast("Post deleted.");
+  }
+ }
+});
+
+document.getElementById("suggestions").addEventListener("click", function(event) {
+ const button = event.target.closest("[data-follow]");
+ if (!button) return;
+
+ const targetId = button.dataset.follow;
+ const user = getUser(targetId);
+ if (!user || targetId === currentUser.id) return;
+
+ if (currentUser.following.includes(targetId)) {
+  currentUser.following = currentUser.following.filter(id => id !== targetId);
+  showToast("Unfollowed @" + user.username);
+ } else {
+  currentUser.following.push(targetId);
+  showToast("Now following @" + user.username);
+ }
+
+ saveDatabase();
+ renderApp();
+});
+
+document.getElementById("searchInput").addEventListener("input", function() {
+ searchText = this.value.trim().toLowerCase();
+ renderPosts();
+});
+
+function openPeople(type) {
+ const people = type === "followers"
+  ? followersOf(currentUser.id)
+  : currentUser.following.map(getUser).filter(Boolean);
+
+ document.getElementById("modalTitle").textContent =
+  type === "followers" ? "Your Followers" : "Following";
+
+ const box = document.getElementById("modalPeople");
+
+ if (people.length === 0) {
+  box.innerHTML = `<div class="empty">No ${type} yet.</div>`;
+ } else {
+  box.innerHTML = people.map(user => `
+   <div class="modal-person">
+    ${avatarHTML(user)}
+    <div><strong>${escapeHTML(user.name)}</strong><br>
+    <span class="handle">@${escapeHTML(user.username)}</span></div>
+   </div>`).join("");
+ }
+
+ document.getElementById("peopleModal").classList.remove("hidden");
+}
+
+function closePeople() {
+ document.getElementById("peopleModal").classList.add("hidden");
+}
+
+document.getElementById("peopleModal").addEventListener("click", function(event) {
+ if (event.target === this) closePeople();
+});
+
+let toastTimer;
+function showToast(message) {
+ const toast = document.getElementById("toast");
+ toast.textContent = message;
+ toast.classList.remove("hidden");
+ clearTimeout(toastTimer);
+ toastTimer = setTimeout(() => toast.classList.add("hidden"), 2200);
+}
+
+// Restore the previous signed-in user, if available.
+saveDatabase();
+const savedUserId = localStorage.getItem(SESSION_KEY);
+const savedUser = savedUserId ? getUser(savedUserId) : null;
+
+if (savedUser) {
+ loginUser(savedUser);
+} else {
+ document.getElementById("authScreen").classList.remove("hidden");
+ document.getElementById("app").classList.add("hidden");
+}
+</script>
+</body>
+</html>
